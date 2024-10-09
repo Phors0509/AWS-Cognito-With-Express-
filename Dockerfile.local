@@ -1,0 +1,49 @@
+# Build stage
+
+FROM node:20-alpine3.19 as builder 
+
+# Set the working directory
+
+WORKDIR /app
+
+# Copy the package.json file
+
+COPY package.json ./
+
+# Install the dependencies
+
+RUN npm install 
+
+# Copy the source code
+
+COPY tsconfig.json nodemon.json tsoa.json build-script.js ecosystem.config.js ./
+COPY src ./src
+
+# Fianl stage
+
+FROM node:20-alpine3.19
+
+# Set the working directory
+
+WORKDIR /app
+
+# Copy the package.json file
+
+COPY package.json ./ 
+
+# Install the dependencies only for production
+
+RUN npm install --only=production
+
+# Copy the build files from the previous stage
+
+COPY --from=builder /app/build/ .
+
+# Expose the port
+
+EXPOSE 3000
+
+# Run the application
+
+CMD ["npm", "run", "start"]
+

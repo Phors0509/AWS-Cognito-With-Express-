@@ -1,0 +1,31 @@
+version: "3.8"
+services:
+    backend_sample:
+        container_name: backend_sample_container
+        build:
+            context: .
+            dockerfile: Dockerfile.dev
+        restart: always
+        ports:
+            - 3000:3000
+        env_file: ./src/configs/.env.development
+        environment:
+            - DOCKER_ENV=true
+        volumes:
+            - ./src:/app/src
+        depends_on:
+            - mongodb
+    mongodb:
+        container_name: mongodb_container
+        image: mongo:latest
+        restart: always
+        ports:
+            - "27017:27017"
+        volumes:
+            - mongodb_data:/data/db
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: Sophorn
+            MONGO_INITDB_ROOT_PASSWORD: 123123
+            MONGO_INITDB_DATABASE: my_products
+volumes:
+    mongodb_data:

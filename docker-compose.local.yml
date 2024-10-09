@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+    backend_sample:
+        image: backend_sample_app:latest
+        container_name: backend_sample_container
+        build:
+            context: .
+            dockerfile: Dockerfile.local
+        restart: always
+        ports:
+            - 4000:3000
+        env_file: ./src/configs/.env.development
+        environment:
+            - DOCKER_ENV=true
