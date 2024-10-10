@@ -1,14 +1,16 @@
-// auth.repository.ts
 import { createAuthRequest, verifyAuthRequest, signInAuthRequest } from "@/controllers/types/auth/auth-request.type";
-import { CognitoUserSession } from 'amazon-cognito-identity-js';
+// import { CognitoUserSession } from 'amazon-cognito-identity-js';
 import {
     CognitoIdentityProviderClient,
     InitiateAuthCommand,
     SignUpCommand,
     ConfirmSignUpCommand,
+    // GetUserCommand,
+    AdminGetUserCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import crypto from 'crypto';
 import configs from '@/config';
+import User, { IUser } from '@/database/models/user.model';
 
 export class AuthRepository {
     private clientId: string;
@@ -53,51 +55,172 @@ export class AuthRepository {
 
     public async verify(verifyRequest: verifyAuthRequest): Promise<void> {
         const secretHash = this.calculateSecretHash(verifyRequest.email);
-        console.log(`AuthRepository - verify() method called for ${verifyRequest.email} with code ${verifyRequest.verificationCode}`);
 
         const command = new ConfirmSignUpCommand({
-            ClientId: this.clientId,
+            ClientId: configs.cognito.clientId,
             Username: verifyRequest.email,
             ConfirmationCode: verifyRequest.verificationCode,
             SecretHash: secretHash
+
         });
 
-        console.log("Request payload to Cognito for verification:", command);
-
         try {
-            const response = await this.client.send(command);
-            console.log(`AuthRepository - verify() successful: `, response);
+            await this.client.send(command);
         } catch (error) {
             console.error(`AuthRepository - verify() method error:`, error);
             throw error;
         }
     }
 
-    public async signIn(signInRequest: signInAuthRequest): Promise<CognitoUserSession> {
-        const secretHash = this.calculateSecretHash(signInRequest.email);
+    // private async storeUserInDatabase(email: string): Promise<void> {
+    //     try {
+    //         // Get user attributes from Cognito
+    //         const getUserCommand = new GetUserCommand({
+    //             AccessToken: 'ACCESS_TOKEN_HERE', // You'll need to get this from the sign-in response
+    //         });
+    //         const userResponse = await this.client.send(getUserCommand);
 
+    //         // Find the 'sub' attribute which is the Cognito User ID
+    //         const cognitoId = userResponse.UserAttributes?.find(attr => attr.Name === 'sub')?.Value;
+
+    //         if (!cognitoId) {
+    //             throw new Error('AuthRepository - storeUserInDatabase() method error: Cognito ID not found');
+    //         }
+
+    //         // Create or update user in MongoDB
+    //         await this.storeUser(email, cognitoId);
+
+    //     } catch (error) {
+    //         console.log("AuthRepository - storeUserInDatabase() method error:", error);
+    //         throw error;
+    //     }
+    // }
+
+    // public async getUserAttributes(email: string): Promise<any[]> {
+    //     const command = new AdminGetUserCommand({
+    //         UserPoolId: configs.cognito.userPoolId,
+    //         Username: email
+    //     });
+
+    //     try {
+    //         const response = await this.client.send(command);
+    //         return response.UserAttributes || [];
+    //     } catch (error) {
+    //         console.error(`AuthRepository - getUserAttributes() method error:`, error);
+    //         throw error;
+    //     }
+    // }
+
+    // public async signIn(signInRequest: signInAuthRequest): Promise<CognitoUserSession> {
+    //     const secretHash = this.calculateSecretHash(signInRequest.email);
+
+    //     const command = new InitiateAuthCommand({
+    //         AuthFlow: "USER_PASSWORD_AUTH",
+    //         ClientId: this.clientId,
+    //         AuthParameters: {
+    //             USERNAME: signInRequest.email,
+    //             PASSWORD: signInRequest.password,
+    //             SECRET_HASH: secretHash
+    //         }
+    //     });
+
+    //     try {
+    //         const response = await this.client.send(command);
+    //         const session = {
+    //             getIdToken: () => ({ getJwtToken: () => response.AuthenticationResult?.IdToken }),
+    //             getRefreshToken: () => ({ getToken: () => response.AuthenticationResult?.RefreshToken }),
+    //             getAccessToken: () => ({ getJwtToken: () => response.AuthenticationResult?.AccessToken }),
+    //             isValid: () => true
+    //         } as CognitoUserSession;
+
+    //         return session;
+    //     } catch (error) {
+    //         console.error(`AuthRepository - signIn() method error:`, error);
+    //         throw error;
+    //     }
+    // }
+
+    public async signIn(signInRequest: signInAuthRequest): Promise<any> {
+        const secretHash = this.calculateSecretHash(signInRequest.email);
         const command = new InitiateAuthCommand({
             AuthFlow: "USER_PASSWORD_AUTH",
-            ClientId: this.clientId,
+            ClientId: configs.cognito.clientId,
             AuthParameters: {
                 USERNAME: signInRequest.email,
                 PASSWORD: signInRequest.password,
                 SECRET_HASH: secretHash
-            }
+            },
         });
 
         try {
             const response = await this.client.send(command);
-            const session = {
-                getIdToken: () => ({ getJwtToken: () => response.AuthenticationResult?.IdToken }),
-                getRefreshToken: () => ({ getToken: () => response.AuthenticationResult?.RefreshToken }),
-                getAccessToken: () => ({ getJwtToken: () => response.AuthenticationResult?.AccessToken }),
-                isValid: () => true
-            } as CognitoUserSession;
-
-            return session;
+            return response.AuthenticationResult;
         } catch (error) {
             console.error(`AuthRepository - signIn() method error:`, error);
+            throw error;
+        }
+    }
+
+
+    public async getUserAttributes(username: string): Promise<any[]> {
+        const command = new AdminGetUserCommand({
+            UserPoolId: configs.cognito.userPoolId,
+            Username: username
+        });
+
+        try {
+            const response = await this.client.send(command);
+            return response.UserAttributes || [];
+        } catch (error) {
+            console.error(`AuthRepository - getUserAttributes() method error:`, error);
+            throw error;
+        }
+    }
+
+    public async storeUser(email: string, cognitoId: string): Promise<IUser> {
+        try {
+            const user = await User.findOneAndUpdate(
+                { email },
+                {
+                    email,
+                    cognitoId,
+                    isEmailVerified: true
+                },
+                { upsert: true, new: true }
+            );
+            return user;
+        } catch (error) {
+            console.error('Error storing user in database:', error);
+            throw error;
+        }
+    }
+
+    public async getUserByEmail(email: string): Promise<IUser | null> {
+        try {
+            const user = await User.findOne({ email });
+            return user;
+        } catch (error) {
+            console.error(`AuthRepository - getUserByEmail() method error: ${error}`);
+            throw error;
+        }
+    }
+
+    public async getAllUsers(page: number = 1, limit: number = 10) {
+        try {
+            const skip = (page - 1) * limit;
+            const users = await User.find()
+                .skip(skip)
+                .limit(limit)
+                .select('-__v'); // Exclude the version key
+            const total = await User.countDocuments();
+            return {
+                users,
+                totalUsers: total,
+                currentPage: page,
+                totalPages: Math.ceil(total / limit)
+            };
+        } catch (error) {
+            console.error(`AuthRepository - getAllUsers() method error: ${error}`);
             throw error;
         }
     }

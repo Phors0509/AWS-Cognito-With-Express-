@@ -155,7 +155,28 @@
 					"message": {
 						"type": "string"
 					},
-					"data": {}
+					"data": {
+						"properties": {
+							"attributes": {
+								"items": {},
+								"type": "array"
+							},
+							"IdToken": {
+								"type": "string"
+							},
+							"RefreshToken": {
+								"type": "string"
+							},
+							"accessToken": {
+								"type": "string"
+							},
+							"email": {
+								"type": "string"
+							}
+						},
+						"type": "object",
+						"nullable": true
+					}
 				},
 				"required": [
 					"message",
@@ -208,6 +229,124 @@
 				"required": [
 					"email",
 					"password"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"UserAttributesResponse": {
+				"properties": {
+					"message": {
+						"type": "string"
+					},
+					"data": {
+						"properties": {
+							"attributes": {
+								"items": {},
+								"type": "array"
+							}
+						},
+						"required": [
+							"attributes"
+						],
+						"type": "object"
+					}
+				},
+				"required": [
+					"message",
+					"data"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"IUser": {
+				"properties": {
+					"email": {
+						"type": "string"
+					},
+					"cognitoId": {
+						"type": "string"
+					},
+					"isEmailVerified": {
+						"type": "boolean"
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"updatedAt": {
+						"type": "string",
+						"format": "date-time"
+					}
+				},
+				"required": [
+					"email",
+					"cognitoId",
+					"isEmailVerified",
+					"createdAt",
+					"updatedAt"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"UserResponse": {
+				"properties": {
+					"message": {
+						"type": "string"
+					},
+					"data": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/IUser"
+							}
+						],
+						"nullable": true
+					}
+				},
+				"required": [
+					"message",
+					"data"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"UsersResponse": {
+				"properties": {
+					"message": {
+						"type": "string"
+					},
+					"data": {
+						"properties": {
+							"totalPages": {
+								"type": "number",
+								"format": "double"
+							},
+							"currentPage": {
+								"type": "number",
+								"format": "double"
+							},
+							"totalUsers": {
+								"type": "number",
+								"format": "double"
+							},
+							"users": {
+								"items": {
+									"$ref": "#/components/schemas/IUser"
+								},
+								"type": "array"
+							}
+						},
+						"required": [
+							"totalPages",
+							"currentPage",
+							"totalUsers",
+							"users"
+						],
+						"type": "object"
+					}
+				},
+				"required": [
+					"message",
+					"data"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -482,6 +621,111 @@
 						}
 					}
 				}
+			}
+		},
+		"/auth/user/{email}/attributes": {
+			"get": {
+				"operationId": "GetUserAttributes",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserAttributesResponse"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "email",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/auth/user/{email}": {
+			"get": {
+				"operationId": "GetUserByEmail",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserResponse"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "email",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/auth/users": {
+			"get": {
+				"operationId": "GetAllUsers",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UsersResponse"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "page",
+						"required": false,
+						"schema": {
+							"default": 1,
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "limit",
+						"required": false,
+						"schema": {
+							"default": 10,
+							"format": "double",
+							"type": "number"
+						}
+					}
+				]
 			}
 		}
 	},

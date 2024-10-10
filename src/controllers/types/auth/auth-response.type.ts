@@ -1,6 +1,12 @@
 export interface AuthResponse {
     message: string;
-    data: any;
+    data: {
+        email?: string;
+        AccessToken?: string;
+        RefreshToken?: string;
+        IdToken?: string;
+        attributes?: any[];
+    } | null;
 }
 
 export interface AuthSessionResponse {

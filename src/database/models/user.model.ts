@@ -1,22 +1,18 @@
-import mongoose from "mongoose";
+// user.model.ts
+import mongoose, { Schema } from "mongoose";
 
 export interface IUser {
-    name: string;
-    age: number;
-    gender: string;
     email: string;
-    password: string;
-    sub: string;
-    googleSub: string,
-    facebookSub: string,
+    cognitoId: string;
+    isEmailVerified: boolean;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
-const UserSchema = new mongoose.Schema<IUser>({
-    sub: { type: String, required: true },
-    googleSub: { type: String, required: false },
-    facebookSub: { type: String, required: false },
-},
-    { timestamps: true });
 
-const UserModel = mongoose.model<IUser>('User', UserSchema);
-export default UserModel;
+const UserSchema = new Schema({
+    email: { type: String, required: true },
+    cognitoId: { type: String, required: true },
+    isEmailVerified: { type: Boolean, required: true, default: false },
+}, { timestamps: true });
+export default mongoose.model<IUser>('User', UserSchema);

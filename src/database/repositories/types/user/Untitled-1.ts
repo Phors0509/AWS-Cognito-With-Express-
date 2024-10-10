@@ -1,4 +1,4 @@
-import UserModel from "@/database/models/user.model";
+import UserModel from "@/database/models/user.model1";
 import { MongoError, UserCreationRepoParams, UserGetAllRepoParams, UserSortParams, UserUpdateRepoParams } from "@/database/repositories/types/user/user-repository.type";
 import mongoose, { SortOrder } from "mongoose";
 import { APP_ERROR_MESSAGE, ApplicationError, InvalidInputError, NotFoundError, ResourceConflictError, prettyObject } from "@/utils/errors";
