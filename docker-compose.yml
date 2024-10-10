@@ -11,6 +11,7 @@ services:
         env_file: ./src/configs/.env.development
         environment:
             - DOCKER_ENV=true
+            # - MONGO_URI=mongodb+srv://phorsbeatrmx0509:Phorsbeatrmx0509@tsoa.iaijc.mongodb.net/
         volumes:
             - ./src:/app/src
         depends_on:
@@ -26,6 +27,6 @@ services:
         environment:
             MONGO_INITDB_ROOT_USERNAME: Sophorn
             MONGO_INITDB_ROOT_PASSWORD: 123123
-            MONGO_INITDB_DATABASE: my_products
+            MONGO_INITDB_DATABASE: my_authService
 volumes:
     mongodb_data:
