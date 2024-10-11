@@ -1,3 +1,4 @@
+// auth.controller.ts
 import { Controller, Tags, Route, Post, Get, Body, Path, Query } from 'tsoa';
 import { createAuthRequest, verifyAuthRequest, signInAuthRequest } from './types/auth/auth-request.type';
 import { AuthResponse } from './types/auth/auth-response.type';
@@ -5,30 +6,35 @@ import { UserResponse, UsersResponse } from '@/controllers/types/user/user-respo
 import AuthService from '@/services/auth.service';
 import { AuthRepository } from '@/database/repositories/auth.repository';
 import { UserAttributesResponse } from './types/user/user-response.type';
-
+import { sendResponse } from '@/utils/sendResponse';
 @Route('auth')
 @Tags('Auth')
 export class AuthController extends Controller {
     private authRepository: AuthRepository;
-
     constructor() {
         super();
         this.authRepository = new AuthRepository();
     }
 
-    @Post('/register')
-    public async register(@Body() requestBody: createAuthRequest): Promise<AuthResponse> {
+    @Post("/register")
+    public async register(@Body() createAuthRequest: createAuthRequest): Promise<AuthResponse> {
         try {
-            const result = await AuthService.register(requestBody);
+            await AuthService.register(createAuthRequest);
             return {
                 message: "User registered successfully!",
                 data: {
-                    email: result.email
+                    email: createAuthRequest.email
                 }
             };
-        } catch (error) {
+        } catch (error: any) {
             console.error(`AuthController - register() method error: ${error}`);
-            throw error;
+            if (error.message === 'User already exists') {
+                this.setStatus(409);
+                throw new Error('User with this email already exists');
+            } else {
+                this.setStatus(500);
+                throw new Error('An error occurred during registration');
+            }
         }
     }
 
@@ -60,10 +66,100 @@ export class AuthController extends Controller {
                 }
             };
         } catch (error) {
-            console.error(`AuthController - signIn() method error: ${error}`);
+            console.error(`AuthController - signIn() method error : ${error}`);
             throw error;
         }
     }
+
+    /**
+  * Login with Google using Cognito OAuth2
+  * @param state A unique state string to prevent CSRF attacks
+  */
+    @Get('/google/login')
+    public loginWithGoogle(@Query() state: string) {
+        const cognitoOAuthURL = AuthService.loginWithGoogle(state);
+        return sendResponse({ message: 'Login with Google successfully', data: cognitoOAuthURL });
+    }
+
+    @Get('/google/callback')
+    public async cognitoCallback(
+        @Query() code: string,
+        @Query() state: string,
+    ) {
+        try {
+            // Exchange the code for tokens
+            const tokens = await AuthService.handleCallback(code, state);
+            // console.log('AuthController - cognitoCallback() Log : ', tokens);
+            console.log('Authorization code received:', code);
+            console.log('State received:', state);
+            return sendResponse({
+                message: 'Authentication successful',
+                data: tokens,
+            });
+        } catch (error) {
+            console.error(error);
+            return sendResponse({
+                message: 'Authentication failed',
+                status: 500,
+            });
+        }
+    }
+
+    // @Get('/google/login')
+    // public initiateGoogleLogin() {
+    //     const state = AuthService.generateState(); // Generate state
+    //     const googleAuthUrl = AuthService.getGoogleAuthUrl(state);
+    //     console.log(`AuthController - initiateGoogleLogin() - Google Auth URL: ${googleAuthUrl}`);
+    //     return Response(200, `Google Auth URL generated successfully! : ${googleAuthUrl}`);
+    // }
+
+    // @Get('/google/callback')
+    // @Response(200, 'Success')
+    // @Response(500, 'Authentication failed')
+    // public async handleGoogleCallback(
+    //     @Query('code') code: string,
+    //     @Query('state') state: string,
+    //     @Query('error') error: string,
+    //     @Request() req: any,
+    //     @Response(200, 'Success') res: any
+    // ): Promise<void> {
+    //     try {
+    //         if (error) {
+    //             throw new Error(`Google OAuth Error: ${error}`);
+    //         }
+
+    //         if (!code) {
+    //             throw new Error('No authorization code received from Google');
+    //         }
+
+    //         if (state !== req.session.oauthState) {
+    //             throw new Error('Invalid state parameter');
+    //         }
+
+    //         const tokenResponse = await AuthService.exchangeCodeForTokens(code);
+
+    //         if (!tokenResponse.data || !tokenResponse.data.access_token) {
+    //             throw new Error('Invalid token response from Google');
+    //         }
+
+    //         AuthService.storeTokensInCookies(res, tokenResponse.data);
+
+    //         const userInfo = await AuthService.getUserInfo(tokenResponse.data.access_token);
+    //         req.session.user = userInfo;
+
+    //         // Redirect to your frontend application
+    //         res.redirect('http://localhost:3000/products');
+    //     } catch (error) {
+    //         console.error('Error handling Google callback:', error);
+    //         // Send a more informative error response
+    //         res.status(500).json({
+    //             error: 'Authentication failed',
+    //             message: "error occurred during authentication",
+    //             stack: process.env.NODE_ENV === 'development' ? (error as any).stack : undefined
+    //         });
+    //     }
+    // }
+
 
     @Get('/user/{email}/attributes')
     public async getUserAttributes(@Path() email: string): Promise<UserAttributesResponse> {

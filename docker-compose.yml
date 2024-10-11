@@ -8,10 +8,14 @@ services:
         restart: always
         ports:
             - 3000:3000
-        env_file: ./src/configs/.env.development
+        env_file:
+            - ./src/configs/.env.development # Ensure .env.development has the AWS credentials
         environment:
             - DOCKER_ENV=true
-            # - MONGO_URI=mongodb+srv://phorsbeatrmx0509:Phorsbeatrmx0509@tsoa.iaijc.mongodb.net/
+            - COGNITO_USER_POOL_ID=us-west-2_mOnfhzlwA
+            - COGNITO_CLIENT_ID=60u3ht4t17mlqp52d9vmuseh5t
+            - COGNITO_REGION=us-west-2
+            - COGNITO_CLIENT_SECRET=dm97dgknbl22m3trukqatn698ks0pktrher0iflia62pk49m6s3
         volumes:
             - ./src:/app/src
         depends_on:

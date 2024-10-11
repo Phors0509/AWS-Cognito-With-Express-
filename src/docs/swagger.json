@@ -167,7 +167,7 @@
 							"RefreshToken": {
 								"type": "string"
 							},
-							"accessToken": {
+							"AccessToken": {
 								"type": "string"
 							},
 							"email": {
@@ -621,6 +621,108 @@
 						}
 					}
 				}
+			}
+		},
+		"/auth/google/login": {
+			"get": {
+				"operationId": "LoginWithGoogle",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"data": {},
+										"message": {
+											"type": "string"
+										},
+										"status": {
+											"type": "number",
+											"format": "double"
+										}
+									},
+									"required": [
+										"data",
+										"message",
+										"status"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Login with Google using Cognito OAuth2",
+				"tags": [
+					"Auth"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"description": "A unique state string to prevent CSRF attacks",
+						"in": "query",
+						"name": "state",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/auth/google/callback": {
+			"get": {
+				"operationId": "CognitoCallback",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"data": {},
+										"message": {
+											"type": "string"
+										},
+										"status": {
+											"type": "number",
+											"format": "double"
+										}
+									},
+									"required": [
+										"data",
+										"message",
+										"status"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Auth"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "code",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "state",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
 			}
 		},
 		"/auth/user/{email}/attributes": {

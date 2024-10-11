@@ -18,3 +18,8 @@ export interface AuthSessionResponse {
         RefreshToken?: string;
     };
 }
+
+export interface AuthGoogleResponse {
+    message: string;
+    data: string;
+}
