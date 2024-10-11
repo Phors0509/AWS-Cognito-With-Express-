@@ -8,9 +8,9 @@ import crypto from 'crypto';
 import { IUser } from '@/database/models/user.model';
 
 export class AuthService {
-    private readonly GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '705404076755-14d6im0imscn51dr8ietoeu6eu594jph.apps.googleusercontent.com';
-    private readonly GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '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';
-    private readonly REDIRECT_URI = process.env.REDIRECT_URI || 'https://sophorn.auth.us-west-2.amazoncognito.com/oauth2/idpresponse';
+    private readonly GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
+    private readonly GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
+    private readonly REDIRECT_URI = process.env.REDIRECT_URI!;
 
     private awsCognitoDomain = process.env.COGNITO_DOMAIN!;
     private awsCognitoClientId = process.env.COGNITO_CLIENT_ID!;
