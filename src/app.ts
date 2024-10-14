@@ -1,11 +1,11 @@
 import express from "express";
+import cookieParser from 'cookie-parser';
 import { RegisterRoutes } from "./routes/v1/routes";
 import swaggerUi from 'swagger-ui-express';
 import path from "path";
 import fs from 'fs';
 import { globalErrorHandler } from "./middlewares/globalErrorHandler";
 import reqDateMiddleware from "./middlewares/reqDateMiddleware";
-
 // Load Swagger JSON
 const swaggerFile = path.resolve(__dirname, 'docs/swagger.json');
 const swaggerData = fs.readFileSync(swaggerFile, 'utf8');
@@ -19,8 +19,9 @@ const user = {
 // Initialize express app
 const app = express();
 
-// Global Middlewares
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+// Global Middlewares
 
 // Register middleware
 app.use(reqDateMiddleware)
@@ -28,6 +29,7 @@ app.use(reqDateMiddleware)
 // Register routes
 RegisterRoutes(app);
 
+app.use(cookieParser());
 // Serve Swagger UI
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

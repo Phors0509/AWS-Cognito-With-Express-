@@ -658,17 +658,7 @@
 					"Auth"
 				],
 				"security": [],
-				"parameters": [
-					{
-						"description": "A unique state string to prevent CSRF attacks",
-						"in": "query",
-						"name": "state",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				]
+				"parameters": []
 			}
 		},
 		"/auth/google/callback": {
@@ -705,24 +695,7 @@
 					"Auth"
 				],
 				"security": [],
-				"parameters": [
-					{
-						"in": "query",
-						"name": "code",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"in": "query",
-						"name": "state",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				]
+				"parameters": []
 			}
 		},
 		"/auth/user/{email}/attributes": {

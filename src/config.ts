@@ -13,6 +13,7 @@ type Config = {
         clientSecret: string;
         region: string;
     };
+    clientUrl: string;
 };
 
 function loadConfig(): Config {
@@ -38,11 +39,13 @@ function loadConfig(): Config {
         env: envVars.NODE_ENV,
         port: envVars.PORT,
         mongodbUrl: envVars.MONGODB_URL,
+        clientUrl: 'http://localhost:3000',
         cognito: {
             userPoolId: envVars.COGNITO_USER_POOL_ID,
             clientId: envVars.COGNITO_CLIENT_ID,
             clientSecret: envVars.COGNITO_CLIENT_SECRET,
             region: envVars.COGNITO_REGION,
+
         },
     };
 }

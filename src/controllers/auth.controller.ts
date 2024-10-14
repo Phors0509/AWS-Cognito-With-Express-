@@ -1,12 +1,18 @@
 // auth.controller.ts
-import { Controller, Tags, Route, Post, Get, Body, Path, Query } from 'tsoa';
-import { createAuthRequest, verifyAuthRequest, signInAuthRequest } from './types/auth/auth-request.type';
+import { createAuthRequest, verifyAuthRequest, signInAuthRequest, GoogleCallbackRequest } from './types/auth/auth-request.type';
 import { AuthResponse } from './types/auth/auth-response.type';
 import { UserResponse, UsersResponse } from '@/controllers/types/user/user-response.type';
 import AuthService from '@/services/auth.service';
 import { AuthRepository } from '@/database/repositories/auth.repository';
 import { UserAttributesResponse } from './types/user/user-response.type';
 import { sendResponse } from '@/utils/sendResponse';
+import setCookie from '@/utils/cookie';
+import { Controller, Tags, Route, Post, Get, Body, Path, Query, Request, Queries } from 'tsoa';
+import express from 'express';
+interface GoogleCallbackQuery {
+    code: string;
+    state: string;
+}
 @Route('auth')
 @Tags('Auth')
 export class AuthController extends Controller {
@@ -76,89 +82,87 @@ export class AuthController extends Controller {
   * @param state A unique state string to prevent CSRF attacks
   */
     @Get('/google/login')
-    public loginWithGoogle(@Query() state: string) {
-        const cognitoOAuthURL = AuthService.loginWithGoogle(state);
+    public loginWithGoogle() {
+        const cognitoOAuthURL = AuthService.loginWithGoogle();
         return sendResponse({ message: 'Login with Google successfully', data: cognitoOAuthURL });
     }
 
-    @Get('/google/callback')
+
+    // @Get('/google/callback')
+    // public async cognitoCallback(
+    //     @Request() request: express.Request,
+    //     @Queries() query: { code: string, state: string },
+    // ) {
+    //     // console.log('AuthController - cognitoCallback(): Authorization code received:', query);
+    //     // console.log('AuthController - cognitoCallback(): State received:', query);
+    //     // console.log('AuthController - cognitoCallback(): Request received:', request.res);
+    //     try {
+    //         const response = request.res as express.Response;
+    //         const tokens = await AuthService.handleCallback(query.code, query.state);
+    //         console.log('AuthController - cognitoCallback(): resoinse recived:', response);
+    //         setCookie(tokens, 'id_token', tokens.id_token);
+    //         return sendResponse({
+    //             message: 'Authentication successful',
+    //             data: tokens,
+    //         });
+    //     } catch (error) {
+    //         console.error('AuthController - cognitoCallback(): Authentication failed', error);
+    //         return sendResponse({
+    //             message: 'Authentication failed',
+    //             status: 500,
+    //         });
+    //     }
+    // }
+
+    @Get('google/callback')
     public async cognitoCallback(
-        @Query() code: string,
-        @Query() state: string,
+        @Request() request: express.Request
     ) {
+        console.log('AuthController - cognitoCallback(): Request received');
+        console.log('Query parameters:', request.query);
+
         try {
-            // Exchange the code for tokens
+            const code = request.query.code as string;
+            const state = request.query.state as string;
+
+            if (!code) {
+                console.error('AuthController - cognitoCallback(): No code provided in query parameters');
+                return sendResponse({
+                    status: 400,
+                    message: 'No authorization code provided',
+                    data: null,
+                });
+            }
+
+            console.log('AuthController - cognitoCallback(): Authorization code received:', code);
+            console.log('AuthController - cognitoCallback(): State received:', state);
+
+            const response = (request as any).res as express.Response;
             const tokens = await AuthService.handleCallback(code, state);
-            // console.log('AuthController - cognitoCallback() Log : ', tokens);
-            console.log('Authorization code received:', code);
-            console.log('State received:', state);
+
+            console.log('AuthController - cognitoCallback(): Tokens received:', tokens);
+
+            // Set cookies
+            setCookie(response, 'id_token', tokens.id_token);
+            setCookie(response, 'access_token', tokens.access_token);
+            setCookie(response, 'refresh_token', tokens.refresh_token);
+
             return sendResponse({
+                status: 200,
                 message: 'Authentication successful',
                 data: tokens,
             });
         } catch (error) {
-            console.error(error);
+            console.error('AuthController - cognitoCallback(): Authentication failed', error);
             return sendResponse({
-                message: 'Authentication failed',
                 status: 500,
+                message: 'Authentication failed',
+                data: null,
             });
         }
     }
 
-    // @Get('/google/login')
-    // public initiateGoogleLogin() {
-    //     const state = AuthService.generateState(); // Generate state
-    //     const googleAuthUrl = AuthService.getGoogleAuthUrl(state);
-    //     console.log(`AuthController - initiateGoogleLogin() - Google Auth URL: ${googleAuthUrl}`);
-    //     return Response(200, `Google Auth URL generated successfully! : ${googleAuthUrl}`);
-    // }
 
-    // @Get('/google/callback')
-    // @Response(200, 'Success')
-    // @Response(500, 'Authentication failed')
-    // public async handleGoogleCallback(
-    //     @Query('code') code: string,
-    //     @Query('state') state: string,
-    //     @Query('error') error: string,
-    //     @Request() req: any,
-    //     @Response(200, 'Success') res: any
-    // ): Promise<void> {
-    //     try {
-    //         if (error) {
-    //             throw new Error(`Google OAuth Error: ${error}`);
-    //         }
-
-    //         if (!code) {
-    //             throw new Error('No authorization code received from Google');
-    //         }
-
-    //         if (state !== req.session.oauthState) {
-    //             throw new Error('Invalid state parameter');
-    //         }
-
-    //         const tokenResponse = await AuthService.exchangeCodeForTokens(code);
-
-    //         if (!tokenResponse.data || !tokenResponse.data.access_token) {
-    //             throw new Error('Invalid token response from Google');
-    //         }
-
-    //         AuthService.storeTokensInCookies(res, tokenResponse.data);
-
-    //         const userInfo = await AuthService.getUserInfo(tokenResponse.data.access_token);
-    //         req.session.user = userInfo;
-
-    //         // Redirect to your frontend application
-    //         res.redirect('http://localhost:3000/products');
-    //     } catch (error) {
-    //         console.error('Error handling Google callback:', error);
-    //         // Send a more informative error response
-    //         res.status(500).json({
-    //             error: 'Authentication failed',
-    //             message: "error occurred during authentication",
-    //             stack: process.env.NODE_ENV === 'development' ? (error as any).stack : undefined
-    //         });
-    //     }
-    // }
 
 
     @Get('/user/{email}/attributes')

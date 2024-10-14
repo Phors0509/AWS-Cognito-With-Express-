@@ -12,3 +12,8 @@ export interface signInAuthRequest {
     email: string;
     password: string;
 }
+
+export interface GoogleCallbackRequest {
+    code: string;
+    state: string;
+}
