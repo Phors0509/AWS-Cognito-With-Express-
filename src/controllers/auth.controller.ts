@@ -1,5 +1,5 @@
 // auth.controller.ts
-import { createAuthRequest, verifyAuthRequest, signInAuthRequest, GoogleCallbackRequest } from './types/auth/auth-request.type';
+import { createAuthRequest, verifyAuthRequest, signInAuthRequest } from './types/auth/auth-request.type';
 import { AuthResponse } from './types/auth/auth-response.type';
 import { UserResponse, UsersResponse } from '@/controllers/types/user/user-response.type';
 import AuthService from '@/services/auth.service';
@@ -7,12 +7,9 @@ import { AuthRepository } from '@/database/repositories/auth.repository';
 import { UserAttributesResponse } from './types/user/user-response.type';
 import { sendResponse } from '@/utils/sendResponse';
 import setCookie from '@/utils/cookie';
-import { Controller, Tags, Route, Post, Get, Body, Path, Query, Request, Queries } from 'tsoa';
+import { Controller, Tags, Route, Post, Get, Body, Path, Query, Request } from 'tsoa';
 import express from 'express';
-interface GoogleCallbackQuery {
-    code: string;
-    state: string;
-}
+
 @Route('auth')
 @Tags('Auth')
 export class AuthController extends Controller {
@@ -87,40 +84,10 @@ export class AuthController extends Controller {
         return sendResponse({ message: 'Login with Google successfully', data: cognitoOAuthURL });
     }
 
-
-    // @Get('/google/callback')
-    // public async cognitoCallback(
-    //     @Request() request: express.Request,
-    //     @Queries() query: { code: string, state: string },
-    // ) {
-    //     // console.log('AuthController - cognitoCallback(): Authorization code received:', query);
-    //     // console.log('AuthController - cognitoCallback(): State received:', query);
-    //     // console.log('AuthController - cognitoCallback(): Request received:', request.res);
-    //     try {
-    //         const response = request.res as express.Response;
-    //         const tokens = await AuthService.handleCallback(query.code, query.state);
-    //         console.log('AuthController - cognitoCallback(): resoinse recived:', response);
-    //         setCookie(tokens, 'id_token', tokens.id_token);
-    //         return sendResponse({
-    //             message: 'Authentication successful',
-    //             data: tokens,
-    //         });
-    //     } catch (error) {
-    //         console.error('AuthController - cognitoCallback(): Authentication failed', error);
-    //         return sendResponse({
-    //             message: 'Authentication failed',
-    //             status: 500,
-    //         });
-    //     }
-    // }
-
     @Get('google/callback')
     public async cognitoCallback(
         @Request() request: express.Request
     ) {
-        console.log('AuthController - cognitoCallback(): Request received');
-        console.log('Query parameters:', request.query);
-
         try {
             const code = request.query.code as string;
             const state = request.query.state as string;
@@ -134,13 +101,8 @@ export class AuthController extends Controller {
                 });
             }
 
-            console.log('AuthController - cognitoCallback(): Authorization code received:', code);
-            console.log('AuthController - cognitoCallback(): State received:', state);
-
             const response = (request as any).res as express.Response;
             const tokens = await AuthService.handleCallback(code, state);
-
-            console.log('AuthController - cognitoCallback(): Tokens received:', tokens);
 
             // Set cookies
             setCookie(response, 'id_token', tokens.id_token);
@@ -150,7 +112,7 @@ export class AuthController extends Controller {
             return sendResponse({
                 status: 200,
                 message: 'Authentication successful',
-                data: tokens,
+                data: null,
             });
         } catch (error) {
             console.error('AuthController - cognitoCallback(): Authentication failed', error);

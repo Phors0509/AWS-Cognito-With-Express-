@@ -2,7 +2,7 @@
 import { createAuthRequest, verifyAuthRequest, signInAuthRequest } from "@/controllers/types/auth/auth-request.type";
 import { AuthSessionResponse } from "@/controllers/types/auth/auth-response.type";
 import AuthRepository from "@/database/repositories/auth.repository";
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import crypto from 'crypto';
 
 export class AuthService {
@@ -23,7 +23,7 @@ export class AuthService {
     * Generate Cognito OAuth2 URL for Google login
     * @param state A unique state string to prevent CSRF attacks
     */
-    public loginWithGoogle(state?: string): string {
+    public loginWithGoogle(): string {
         // If state is not provided, generate a random state value
         const stateValue = crypto.randomBytes(16).toString('hex');
 
@@ -40,38 +40,8 @@ export class AuthService {
         return `${this.awsCognitoDomain}/oauth2/authorize?${params.toString()}`;
     }
 
-    // public async handleCallback(code: string, _state: string): Promise<any> {
-    //     const tokenUrl = `${this.awsCognitoDomain}/oauth2/token`;
-    //     console.log('AuthService - handleCallback() called with code:', code);
-    //     console.log('AuthService - handleCallback() called with state:', _state);
-
-    //     const params = new URLSearchParams({
-    //         grant_type: 'authorization_code',
-    //         client_id: this.awsCognitoClientId,
-    //         redirect_uri: this.awsRedirectUri,
-    //         code: code,
-    //     });
-
-    //     const headers = {
-    //         'Content-Type': 'application/x-www-form-urlencoded',
-    //         Authorization: `Basic ${Buffer.from(`${this.awsCognitoClientId}:${this.awsCognitoClientSecret}`).toString('base64')}`,
-    //     };
-
-    //     try {
-    //         const response = await axios.post(tokenUrl, params.toString(), { headers });
-    //         return response.data; // This will contain access token, id token, etc.
-    //     } catch (error) {
-    //         // console.error('Failed to get tokens from Cognito', error);
-    //         throw new Error('Failed to get tokens from Cognito');
-    //     }
-    // }
-
-
-    // Your existing methods...
     public async handleCallback(code: string, state?: string): Promise<any> {
-        console.log('AuthService - handleCallback(): Starting token exchange');
         const tokenUrl = `${this.awsCognitoDomain}/oauth2/token`;
-
         const params = new URLSearchParams({
             grant_type: 'authorization_code',
             client_id: this.awsCognitoClientId,
@@ -89,15 +59,14 @@ export class AuthService {
         };
 
         try {
-            console.log('AuthService - handleCallback(): Sending request to Cognito');
             const response = await axios.post(tokenUrl, params.toString(), { headers });
-            console.log('AuthService - handleCallback(): Received response from Cognito');
             return response.data;
         } catch (error) {
             console.error('AuthService - handleCallback(): Failed to get tokens from Cognito', error);
             throw error;
         }
     }
+
     public async getAllUsers(page: number = 1, limit: number = 10) {
         try {
             return await AuthRepository.getAllUsers(page, limit);
